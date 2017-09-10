@@ -21,7 +21,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.inventory_app.data.InventoryContract.InventoryEntry;
@@ -97,9 +96,6 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     private void init(Bundle savedInstanceState) {
 
         Log.v(LOG_TAG, " -> init");
-
-        TextView textViewPrice = (TextView) findViewById(R.id.textViewPrice);
-        textViewPrice.setText(textViewPrice.getText() + " (" + MainActivity.currencySymbol + ")");
 
         editTextQuantity = (EditText) findViewById(R.id.editTextQuantity);
 
@@ -273,19 +269,49 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         Log.v(LOG_TAG, " -> onSaveInstanceState");
+
         if( byteArrayImage != null )
-            outState.putByteArray("image", byteArrayImage);
+            outState.putByteArray(InventoryEntry.COLUMN_IMAGE, byteArrayImage);
+
+        outState.putBoolean("itemHasChanged", itemHasChanged);
+        outState.putString(InventoryEntry.COLUMN_NAME, editTextName.getText().toString());
+        outState.putString(InventoryEntry.COLUMN_PRICE, editTextPrice.getText().toString());
+        outState.putString(InventoryEntry.COLUMN_QUANTITY, editTextQuantity.getText().toString());
+        outState.putString(InventoryEntry.COLUMN_SUPPLIER_NAME, editTextSupplierName.getText().toString());
+        outState.putString(InventoryEntry.COLUMN_SUPPLIER_PHONE, editTextSupplierPhone.getText().toString());
+        outState.putString(InventoryEntry.COLUMN_SUPPLIER_EMAIL, editTextSupplierEmail.getText().toString());
     }
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         Log.v(LOG_TAG, " -> onRestoreInstanceState");
-        if( savedInstanceState.containsKey("image") ) {
-            byteArrayImage = savedInstanceState.getByteArray("image");
+        if( savedInstanceState.containsKey(InventoryEntry.COLUMN_IMAGE) ) {
+            byteArrayImage = savedInstanceState.getByteArray(InventoryEntry.COLUMN_IMAGE);
             Bitmap bitmap = InventoryDbHelper.getImage(byteArrayImage);
             imageView.setBackgroundResource(0);
             imageView.setImageBitmap(bitmap);
         }
+
+        if( savedInstanceState.containsKey("itemHasChanged") )
+            itemHasChanged = savedInstanceState.getBoolean("itemHasChanged");
+
+        if( savedInstanceState.containsKey(InventoryEntry.COLUMN_NAME) )
+            editTextName.setText(savedInstanceState.getString(InventoryEntry.COLUMN_NAME));
+
+        if( savedInstanceState.containsKey(InventoryEntry.COLUMN_PRICE) )
+            editTextPrice.setText(savedInstanceState.getString(InventoryEntry.COLUMN_PRICE));
+
+        if( savedInstanceState.containsKey(InventoryEntry.COLUMN_QUANTITY) )
+            editTextQuantity.setText(savedInstanceState.getString(InventoryEntry.COLUMN_QUANTITY));
+
+        if( savedInstanceState.containsKey(InventoryEntry.COLUMN_SUPPLIER_NAME) )
+            editTextSupplierName.setText(savedInstanceState.getString(InventoryEntry.COLUMN_SUPPLIER_NAME));
+
+        if( savedInstanceState.containsKey(InventoryEntry.COLUMN_SUPPLIER_PHONE) )
+            editTextSupplierPhone.setText(savedInstanceState.getString(InventoryEntry.COLUMN_SUPPLIER_PHONE));
+
+        if( savedInstanceState.containsKey(InventoryEntry.COLUMN_SUPPLIER_EMAIL) )
+            editTextSupplierEmail.setText(savedInstanceState.getString(InventoryEntry.COLUMN_SUPPLIER_EMAIL));
     }
 
     @Override
@@ -319,7 +345,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
         sanityCheck();
 
-        if( isNameChanged ) {
+        if( isNameChanged && isImageChanged && isPriceChanged && isQuantityChanged &&
+                isSupplierNameChanged && isSupplierPhoneChanged && isSupplierEmailChanged ) {
 
             ContentValues values = new ContentValues();
             if(isImageChanged)
@@ -342,14 +369,12 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             }
 
             finish();
-        } else {
-
-            if( isImageChanged || isPriceChanged || isQuantityChanged ||
-                    isSupplierNameChanged || isSupplierPhoneChanged || isSupplierEmailChanged )
-                Toast.makeText(this, getString(R.string.name_compulsory), Toast.LENGTH_SHORT).show();
-            else
-                finish();
         }
+        else if( !isNameChanged && !isImageChanged && !isPriceChanged && !isQuantityChanged &&
+                !isSupplierNameChanged && !isSupplierPhoneChanged && !isSupplierEmailChanged )
+            finish();
+        else
+            Toast.makeText(this, getString(R.string.all_fields_compulsory), Toast.LENGTH_SHORT).show();
     }
 
     private void sanityCheck() {
@@ -410,9 +435,11 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
         sanityCheck();
 
-        if( isNameChanged || isImageChanged || isPriceChanged || isQuantityChanged ||
-                isSupplierNameChanged || isSupplierPhoneChanged || isSupplierEmailChanged) {
-
+        if( !isNameChanged && !isImageChanged && !isPriceChanged && !isQuantityChanged &&
+                !isSupplierNameChanged && !isSupplierPhoneChanged && !isSupplierEmailChanged ) {
+            finishOrNavigateUp(FROM_KEY);
+            return;
+        } else {
             DialogInterface.OnClickListener discardButtonClickListener =
                     new DialogInterface.OnClickListener() {
                         @Override
@@ -425,8 +452,6 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
             showUnsavedChangesDialog(discardButtonClickListener);
         }
-        else
-            finishOrNavigateUp(FROM_KEY);
     }
 
     private void finishOrNavigateUp( final int FROM_KEY ) {
@@ -459,7 +484,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
         sanityCheck();
 
-        if( isNameChanged ) {
+        if( isNameChanged && isImageChanged && isPriceChanged && isQuantityChanged &&
+                isSupplierNameChanged && isSupplierPhoneChanged && isSupplierEmailChanged ) {
 
             ContentValues values = new ContentValues();
             if(isImageChanged)
@@ -480,8 +506,11 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
             finish();
         }
+        else if( !isNameChanged && !isImageChanged && !isPriceChanged && !isQuantityChanged &&
+                !isSupplierNameChanged && !isSupplierPhoneChanged && !isSupplierEmailChanged )
+            finish();
         else
-            Toast.makeText(this, getString(R.string.name_compulsory), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.all_fields_compulsory), Toast.LENGTH_SHORT).show();
     }
 
     @Override

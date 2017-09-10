@@ -18,7 +18,6 @@ import android.widget.Toast;
 import com.example.android.inventory_app.data.InventoryContract.InventoryEntry;
 
 import java.text.NumberFormat;
-import java.util.Locale;
 
 public class InventoryCursorAdapter extends CursorAdapter {
 
@@ -73,9 +72,10 @@ public class InventoryCursorAdapter extends CursorAdapter {
         if( price == -1.0 )
             viewHolder.textViewPrice.setText("NA");
         else {
-            NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("en", MainActivity.countryCodeValue));
+            NumberFormat formatter = NumberFormat.getNumberInstance();
             formatter.setMinimumFractionDigits(0);
             formatter.setMaximumFractionDigits(2);
+            formatter.setGroupingUsed(false);
             String priceString = formatter.format(price);
 
             if( priceString.contains(".")) {
@@ -86,7 +86,7 @@ public class InventoryCursorAdapter extends CursorAdapter {
                 priceString = priceStringArray[0] + "." + decimalString;
             }
 
-            viewHolder.textViewPrice.setText(priceString);
+            viewHolder.textViewPrice.setText("₹ " + priceString);
         }
 
         int quantity = cursor.getInt(COLUMN_QUANTITY);
